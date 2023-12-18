@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from datetime import timedelta
-from .models import Feeling, Country
+from .models import Feeling
 import json
 
 def index(request):
@@ -14,21 +14,13 @@ def handle_emoji_click(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         emoji_code = data.get('emoji')
-        country_name = data.get('country', None)
-
-        country = None
-        if country_name:
-            country, _ = Country.objects.get_or_create(name=country_name)
-
-        Feeling.objects.create(emoji=emoji_code, country=country)
+        Feeling.objects.create(emoji=emoji_code)
         return JsonResponse({'status': 'success'})
     
     return JsonResponse({'status': 'error'}, status=400)
 
 def emoji_percentage(request):
-    now = timezone.now()
-    start_time = now - timedelta(days=1)
-    feelings = Feeling.objects.filter(timestamp__gte=start_time)
+    feelings = Feeling.objects.all()
     
     emoji_counts = {}
     total_count = feelings.count()
