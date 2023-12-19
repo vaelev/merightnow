@@ -1,4 +1,6 @@
 merightnow.code-workspace
 merightnow_env/
 db.sqlite3
+merightnow/__pycache__/
+voting/__pycache__/
 ```
