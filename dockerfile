@@ -16,4 +16,4 @@
     COPY . /app/
     
     # Run the application
-    CMD ["gunicorn", "-w", "3", "-b", ":8000", "merightnow.wsgi:application"]
+    CMD ["gunicorn", "-w", "3", "-b", ":8001", "merightnow.wsgi:application"]
