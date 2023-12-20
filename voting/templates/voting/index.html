@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Emoji Feelings</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        h1 {
+            margin-top: 20px;
+        }
+        .emoji-button {
+            font-size: 2rem;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .emoji-percentage {
+            font-size: 1rem;
+            margin-left: 5px;
+        }
+        .emoji-wrapper {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .modal-emoji-button {
+            font-size: 2rem;
+            cursor: pointer;
+            margin: 10px;
+            margin-right: 20px;
+            border: 1px solid #6c757d; /* Bootstrap's secondary color */
+            color: #6c757d; /* Bootstrap's secondary color */
+            background-color: transparent;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-sm text-center">
+        <h1>This is how people are feeling:</h1>
+        <div id="emojis" class="d-flex flex-wrap justify-content-center">
+            <!-- Emoji buttons with percentages will be added here -->
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="emojiModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalLabel">How are you feeling right now?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalEmojis" class="d-flex flex-wrap justify-content-center">
+                        <!-- Emoji buttons for modal will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+    <script>
+        const emojiList = [
+            "1F600", "1F604", "1F601", "1F606", "1F605", "1F923", "1F602", "1F642",
+            "1F643", "1FAE0", "1F609", "1F60A", "1F607", "1F970", "1F60D", "1F929",
+            "1F972", "1F60B", "1F92A", "1F911", "1F917", "1F92D", "1FAE2",
+            "1FAE3", "1F92B", "1F914", "1FAE1", "1F928", "1F610", "1F60F", "1F612",
+            "1F644", "1F62C", "1FAE8", "1F60C", "1F614", "1F924", "1F634",
+            "1F637", "1F975", "1F976", "1F635", "1F92F", "1F920", "1F973", "1F60E",
+            "1F615", "1F61F", "1F62E", "1F633", "1F62D", "1F624", "1F4A9", "1F47D",
+            "1F648", "1F918", "1F44D", "1FAF6", "1F64F", "1F4AA"
+        ];
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function updateEmojiPercentages() {
+            fetch('/emoji_percentage/')
+            .then(response => response.json())
+            .then(percentages => {
+                // Update the emoji buttons with the new percentages
+                document.querySelectorAll('.emoji-wrapper').forEach(wrapper => {
+                    const emoji = wrapper.querySelector('.emoji-button').textContent;
+                    const emojiCode = emoji.codePointAt(0).toString(16).toUpperCase();
+                    const percentageValue = percentages[emojiCode] || 0;
+                    const badge = wrapper.querySelector('.badge');
+                    badge.innerHTML = `${percentageValue.toFixed(2)}%`;
+                    badge.className = 'badge ' + getBadgeClass(percentageValue);
+                });
+            });
+        }
+        
+        function getBadgeClass(percentage) {
+            if (percentage <= 10) {
+                return 'bg-secondary';
+            } else if (percentage <= 30) {
+                return 'bg-warning';
+            } else {
+                return 'bg-danger';
+            }   
+        }
+
+        let myModal; // Define a variable for the modal instance at the top level
+
+        function handleEmojiClick(emojiCode) {
+            fetch('/handle_emoji_click/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ emoji: emojiCode })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                updateEmojiPercentages();
+                myModal.hide(); // Close the modal after click
+            });
+        }
+
+        window.onload = function() {
+            const emojisContainer = document.getElementById('emojis');
+            const modalEmojisContainer = document.getElementById('modalEmojis');
+
+            emojiList.forEach(code => {
+                const emojiChar = String.fromCodePoint(parseInt(code, 16));
+                const emojiWrapper = document.createElement('div');
+                emojiWrapper.classList.add('emoji-wrapper');
+                
+                const emojiButton = document.createElement('div');
+                emojiButton.classList.add('emoji-button');
+                emojiButton.innerHTML = emojiChar;
+                
+                const percentageDisplay = document.createElement('span');
+                percentageDisplay.classList.add('badge', 'bg-secondary'); // Default class
+                percentageDisplay.innerHTML = '0%'; // Default percentage
+                
+                emojiWrapper.appendChild(emojiButton);
+                emojiWrapper.appendChild(percentageDisplay);
+                emojisContainer.appendChild(emojiWrapper);
+
+                const modalButton = document.createElement('button');
+                modalButton.classList.add('modal-emoji-button', 'btn', 'btn-secondary');
+                modalButton.innerHTML = emojiChar;
+                modalButton.addEventListener('click', () => handleEmojiClick(code)); // Handle click
+                modalEmojisContainer.appendChild(modalButton);
+            });
+
+            myModal = new bootstrap.Modal(document.getElementById('emojiModal'), {
+                keyboard: false
+            });
+            myModal.show();
+            
+            updateEmojiPercentages();
+        };
+    </script>
+</body>
+</html>
